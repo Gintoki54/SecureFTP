@@ -6,12 +6,24 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <string.h>
+#include <openssl/aes.h>
 #define SERVEURNAME "127.0.0.1" // adresse IP de mon serveur
 
 int to_server_socket = -1;
 int errflg = 0;
 int fileflag=0;
 int nameflag=0;
+      
+void hexdump(FILE *f, const char *title, const unsigned char *s, int length)
+{
+    for(int n = 0; n < length ; ++n) {
+        if((n%16) == 0)
+            fprintf(f, "\n%s  %04x", title, n);
+        fprintf(f, " %02x", s[n]);
+    }
+    fprintf(f, "\n");
+}    
+
 
 void main (int argc, char *argv[]){
 
@@ -27,6 +39,8 @@ void main (int argc, char *argv[]){
 	extern int optind, opterr; 
 	char *progname = argv[0];
 	FILE *fp;
+	FILE *fkey;
+	char chaine[1024];
 	char *file_name;
 	char *user_name;
 	char *tot_chaine;
@@ -60,12 +74,44 @@ void main (int argc, char *argv[]){
 		fseek(fp, 0L, SEEK_END);
 		sz = ftell(fp);
 		fseek(fp, 0L, SEEK_SET);
-		char chaine[1024];
 		tot_chaine = (char *) malloc(sz*sizeof(char));
 		while(fgets(chaine, 1024, fp)!=NULL){ 
 			strcat(tot_chaine,chaine);
 		}
     		fclose(fp);
+		system("openssl enc -aes-128-cbc -k secret -P -md sha1 >> key.dat");
+		fkey = fopen("key.dat","r");
+		char *key;
+		char *iv;
+		if(fkey){
+			while(fgets(chaine, 1024, fkey)!=NULL){
+			
+                        	if(chaine[0]=='k'){
+					strtok_r(chaine,"=",&key);
+				}else if(chaine[0]=='i'){
+					strtok_r(chaine,"=",&iv);
+				}
+                	}
+			fclose(fkey);
+			system("rm key.dat");
+			//const unsigned char *encode_key= (const unsigned char *) strtol(key,NULL,16);
+			//const unsigned char *encode_content= (const unsigned char *) strtol(tot_chaine,NULL,16);
+		        unsigned char enc_out[sz];
+			unsigned char dec_out[sz];
+		        unsigned char iv2[AES_BLOCK_SIZE];
+			memset(iv2,0x00,AES_BLOCK_SIZE);
+			AES_KEY enc_key,dec_key;
+        		AES_set_encrypt_key((unsigned char*) key, 128, &enc_key);
+			//hexdump(stdout, "AES_KEY", (unsigned char*) &enc_key, sizeof(AES_KEY));
+			AES_cbc_encrypt((unsigned char*) tot_chaine, enc_out, sz,&enc_key, iv2, AES_ENCRYPT);
+			//hexdump(stdout, "AES_ENCRYPT", (unsigned char*) &enc_out, sizeof(enc_out));
+			
+			memset(iv2,0x00,AES_BLOCK_SIZE);
+        		AES_set_decrypt_key((unsigned char*) key, 128, &dec_key);
+			AES_cbc_encrypt(enc_out, dec_out, sz,&dec_key, iv2, AES_DECRYPT);
+			//hexdump(stdout, "AES_DECRYPT", (unsigned char*) &dec_out, sizeof(dec_out));
+		        	
+		}
 	    } 	
 	}
 	if(nameflag)
