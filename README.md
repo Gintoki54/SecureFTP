@@ -1,6 +1,6 @@
 # SecureFTP
 
-##Prérequis
+## Prérequis
 Pour réaliser le chiffrement du fichier et les hash des mots de passe,
 j'ai utilisé openssl qu'il vous faudra installer si vous ne l'avez pas.
 Pour cela veuillez taper les commandes suivantes:
