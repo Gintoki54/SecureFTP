@@ -4,6 +4,7 @@
 Pour réaliser le chiffrement du fichier et les hash des mots de passe,
 j'ai utilisé openssl qu'il vous faudra installer si vous ne l'avez pas.
 Pour cela veuillez taper les commandes suivantes:
+```
 wget https://www.openssl.org/source/openssl-1.1.1-pre8.tar.gz
 tar -xvzf openssl-1.1.1-pre8.tar.gz
 cd openssl-1.1.1-pre8/
