@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #define SERVEURNAME "127.0.0.1" // adresse IP de mon serveur
-#define PORTNUMBER 6554
+#define PORTNUMBER 6563
 int to_server_socket = -1;
 int errflg = 0;
 int fileflag=0;
@@ -192,26 +192,13 @@ void main (int argc, char *argv[]){
                 	}
 			fclose(fkey);
 			system("rm key.dat");
-			//const unsigned char *encode_key= (const unsigned char *) strtol(key,NULL,16);
-			//const unsigned char *encode_content= (const unsigned char *) strtol(tot_chaine,NULL,16);	
-			
-			//unsigned char enc_out_tmp[sz];
 			unsigned char dec_out[sz];
 		        unsigned char iv2[AES_BLOCK_SIZE];
 			memset(iv2,0x00,AES_BLOCK_SIZE);
 			AES_KEY enc_key,dec_key;
         		AES_set_encrypt_key((unsigned char*) key, 128, &enc_key);
-			//hexdump(stdout, "AES_KEY", (unsigned char*) &enc_key, sizeof(AES_KEY));
 			AES_cbc_encrypt((unsigned char*) tot_chaine, enc_out, sz,&enc_key, iv2, AES_ENCRYPT);
 			
-			//hexdump(stdout, "AES_ENCRYPT", (unsigned char*) &enc_out, sizeof(enc_out));
-			
-			/*memset(iv2,0x00,AES_BLOCK_SIZE);
-        		AES_set_decrypt_key((unsigned char*) key, 128, &dec_key);
-			AES_cbc_encrypt(enc_out, dec_out, sz,&dec_key, iv2, AES_DECRYPT);
-			//hexdump(stdout, "AES_DECRYPT", (unsigned char*) &dec_out, sizeof(dec_out));
-			char *chaine_dechiffree =(char *) dec_out;
-			printf("%d\n",sz);*/
 		        	
 		}
 	    } 	
@@ -339,18 +326,19 @@ void main (int argc, char *argv[]){
                 printf("%s\n",buffer);	
 		
 		printf("Enregistrement du fichier %s\n",final_file_name);
-		if((n=send(to_server_socket,key, strlen(key)-1,0))==-1){
+		if((n=send(to_server_socket,key, strlen(key),0))==-1){
 			fprintf(stderr, "Failure Sending Key\n");
             		close(to_server_socket);
             		exit(1);
 		}
+		//printf("%s\n",strlen(key));
 		if((n = recv(to_server_socket,buffer,512,0))==-1){
 			fprintf(stderr, "Failure Receving Message\n");
             		close(to_server_socket);
             		exit(1);
 		}
 		printf("%s\n",buffer);
-		if((n=send(to_server_socket,final_file_name,strlen(final_file_name)-1,0))==-1){
+		if((n=send(to_server_socket,final_file_name,strlen(final_file_name),0))==-1){
 			fprintf(stderr, "Failure Sending File Name\n");
                         close(to_server_socket);
                         exit(1);
@@ -386,7 +374,12 @@ void main (int argc, char *argv[]){
                         exit(1);
 		}
 		printf("%s\n",buffer);	
-
+		if((n=recv(to_server_socket,buffer,512,0))==-1){
+                        fprintf(stderr, "Failure Receving Confirmation Sauvegarde\n");
+                        close(to_server_socket);
+                        exit(1);
+                }
+                printf("%s\n",buffer);
         }
 	/* fermeture de la connection */
 	shutdown(to_server_socket,2);

@@ -12,7 +12,7 @@
 #include <openssl/aes.h>
 #include <openssl/sha.h>
 #include <openssl/evp.h>
-#define PORTNUMBER 6554
+#define PORTNUMBER 6563
 void fin (int i);
 char buffer[512];
 int ma_socket;
@@ -33,6 +33,7 @@ void main (int argc, char *argv[]){
 	struct sockaddr_in mon_address, client_address;
 	int mon_address_longueur, lg,size_file;
 	char file_name[512];
+	memset(file_name,0,512);
 	//char content_file[5000];
 	bzero(&mon_address,sizeof(mon_address));
 	mon_address.sin_port = htons(PORTNUMBER);
@@ -52,7 +53,7 @@ void main (int argc, char *argv[]){
 	listen(ma_socket,5);
 	/* accept la connexion */
 	mon_address_longueur = sizeof(client_address);
-	char *key = (char *) malloc(32);
+	char key[32];
 	int createflag=0;
 	int fileflag=0;
 	char newlogin[50];
@@ -245,13 +246,13 @@ void main (int argc, char *argv[]){
 
 				}else{
 					
-					if((lg=recv(client_socket,buffer,512,0))==-1){
+					if((lg=recv(client_socket,key,512,0))==-1){
 						fprintf(stderr, "Failure Receving Key\n");
 						close(client_socket);
 						exit(1);
 					}
 					
-					strcpy(key,buffer);
+					//strcpy(key,buffer);
 					//printf("%s\n",key);
 					memset(buffer,0,512);
 					if((lg=send(client_socket,"Key reçue",51,0))==-1){
@@ -309,6 +310,26 @@ void main (int argc, char *argv[]){
 
 					char *chaine_dechiffree = (char *) dec_out;
 					//printf("%s\n",chaine_dechiffree);
+					FILE *save_file;
+					char chemin[100] = "./Server/";
+					printf("%s\n",file_name);
+					strcat(chemin,current_username);
+					strcat(chemin,"/");
+					strcat(chemin,file_name);
+					save_file = fopen(chemin,"w");
+					if(save_file){
+						fputs(chaine_dechiffree,save_file);
+						fclose(save_file);
+						if((lg=send(client_socket,"Fichier enregistré avec succès",512,0))==-1){
+                                                	fprintf(stderr, "Failure Sending Confirmation enregistrement\n");
+                                               	 	close(client_socket);
+                                        	}
+					}else{
+						if((lg=send(client_socket,"Problème lors de l'enregistrement du fichier",512,0))==-1){
+                                                        fprintf(stderr, "Failure Sending Confirmation enregistrement\n");
+                                                        close(client_socket);
+                                                }
+					}
 				}
 			}
 			shutdown(client_socket,2);
